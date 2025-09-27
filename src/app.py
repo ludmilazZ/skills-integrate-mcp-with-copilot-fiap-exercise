@@ -6,21 +6,52 @@ for extracurricular activities at Mergington High School.
 """
 
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 import os
 from pathlib import Path
 
 app = FastAPI(title="Mergington High School API",
-              description="API for viewing and signing up for extracurricular activities")
+              description="API for viewing and signing up for extracurricular activities and saving ideas")
 
 # Mount the static files directory
 current_dir = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=os.path.join(Path(__file__).parent,
           "static")), name="static")
 
+ideas = []  # In-memory ideas list
+
 # In-memory activity database
 activities = {
+
+# Pydantic model for ideas
+class Idea(BaseModel):
+    text: str
+    author: str = "anonymous"
+    created_at: str = ""
+
+# Endpoint to add a new idea
+@app.post("/ideas")
+def add_idea(idea: Idea):
+    import datetime
+    idea.created_at = datetime.datetime.now().isoformat()
+    ideas.append(idea)
+    return {"message": "Idea saved!", "idea": idea}
+
+# Endpoint to list all ideas
+@app.get("/ideas")
+def list_ideas():
+    return ideas
+
+# Endpoint to delete an idea by index
+@app.delete("/ideas/{index}")
+def delete_idea(index: int):
+    if index < 0 or index >= len(ideas):
+        raise HTTPException(status_code=404, detail="Idea not found")
+    removed = ideas.pop(index)
+    return {"message": "Idea removed!", "idea": removed}
     "Chess Club": {
         "description": "Learn strategies and compete in chess tournaments",
         "schedule": "Fridays, 3:30 PM - 5:00 PM",
